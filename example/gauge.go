@@ -23,8 +23,8 @@ func main() {
 	defer termui.Close()
 
 	termui.UseTheme("helloworld")
-
-	w := timerwidget.New(*fuse, 50, 10, "timer widget")
+	W, H := tm.Size()
+	w := timerwidget.New(*fuse, W, H, "timer widget")
 
 	evt := make(chan tm.Event)
 	go func() {
@@ -32,15 +32,32 @@ func main() {
 			evt <- tm.PollEvent()
 		}
 	}()
+	pause := false
+FOR:
 	for {
 		select {
 		case e := <-evt:
-			if e.Type == tm.EventKey && e.Ch == 'q' {
-				return
+			if e.Type == tm.EventKey {
+				switch e.Ch {
+					case 'q':
+						break FOR
+					case 'p':
+						pause = ! pause
+						if pause == false {
+							w.Retime()
+						}
+					case 'r':
+						w.Rewind()
+					case 'z':
+						w.Decreasing = ! w.Decreasing
+				}
 			}
+
 		default:
 			termui.Render(w)
-			w.Update()
+			if ! pause {
+				w.Update()
+			}
 			time.Sleep(time.Second / 2)
 		}
 	}
